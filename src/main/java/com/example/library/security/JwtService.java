@@ -1,4 +1,4 @@
-package com.example.library.Secuirty;
+package com.example.library.security;
 
 
 import io.jsonwebtoken.Claims;
