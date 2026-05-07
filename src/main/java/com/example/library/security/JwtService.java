@@ -13,40 +13,40 @@ import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
-
-
+import java.util.UUID;
 
 
 @Service
 public class JwtService {
 
     private final SecretKey key;
-    private final long expirationSeconds;
+    private final long accessExpirationSeconds;
+    private final long refreshExpirationSeconds;
 
   public JwtService(
           @Value("${app.jwt.secret}") String base64Secret,
-          @Value("{app.jwt.expiration-seconds:3600")long expirationSeconds
+          @Value("{app.jwt.expiration-seconds:3600")long accessExpirationSeconds,
+          @Value("${app.jwt.refresh-expiration-seconds:1209600}") long refreshExpirationSeconds
   ){
       this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(base64Secret));
-      this.expirationSeconds = expirationSeconds;
+      this.accessExpirationSeconds = accessExpirationSeconds;
+        this.refreshExpirationSeconds = refreshExpirationSeconds;
   }
-  public String generateToken(String username,String role){
-      Instant now = Instant.now();
-      Instant exp = now.plusSeconds(expirationSeconds);
+    public String generateAccessToken(String username, String role) {
+        return buildToken(username, "access", accessExpirationSeconds, Map.of("role", role));
+    }
 
-      return Jwts.builder()
-              .subject(username)
-              .claims(Map.of("role",role))
-              .issuedAt(Date.from(now))
-              .expiration(Date.from(exp))
-              .signWith(key)
-              .compact();
-  }
+    public String generateRefreshToken(String username) {
+        return buildToken(username, "refresh", refreshExpirationSeconds, Map.of("jti", UUID.randomUUID().toString()));
+    }
+
     public String extractUsername(String token) {
         return parse(token).getSubject();
     }
 
-
+    public String extractType(String token) {
+        return parse(token).get("type", String.class);
+    }
     public boolean isValid(String token) {
         try {
             parse(token);
@@ -55,6 +55,23 @@ public class JwtService {
             return false;
         }
     }
+
+
+    private String buildToken(String username, String type, long expSeconds, Map<String, Object> claims) {
+        Instant now = Instant.now();
+        Instant exp = now.plusSeconds(expSeconds);
+
+        return Jwts.builder()
+                .subject(username)
+                .claims(claims)
+                .claim("type", type)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(exp))
+                .signWith(key)
+                .compact();
+    }
+
+
 
     private Claims parse(String token) {
         return Jwts.parser()
