@@ -1,11 +1,13 @@
 package com.example.library.security;
 
 
+import com.example.library.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +17,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
-
+@Getter
 @Service
 public class JwtService {
 
@@ -23,15 +25,11 @@ public class JwtService {
     private final long accessExpirationSeconds;
     private final long refreshExpirationSeconds;
 
-  public JwtService(
-          @Value("${app.jwt.secret}") String base64Secret,
-          @Value("{app.jwt.expiration-seconds:3600")long accessExpirationSeconds,
-          @Value("${app.jwt.refresh-expiration-seconds:1209600}") long refreshExpirationSeconds
-  ){
-      this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(base64Secret));
-      this.accessExpirationSeconds = accessExpirationSeconds;
-        this.refreshExpirationSeconds = refreshExpirationSeconds;
-  }
+    public JwtService(JwtProperties props) {
+        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(props.secret()));
+        this.accessExpirationSeconds = props.accessExpirationSeconds();
+        this.refreshExpirationSeconds = props.refreshExpirationSeconds();
+    }
     public String generateAccessToken(String username, String role) {
         return buildToken(username, "access", accessExpirationSeconds, Map.of("role", role));
     }

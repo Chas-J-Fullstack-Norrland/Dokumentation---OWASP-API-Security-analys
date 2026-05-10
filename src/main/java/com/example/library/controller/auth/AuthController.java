@@ -1,7 +1,9 @@
 package com.example.library.controller.auth;
 
 import com.example.library.dto.auth.LoginRequest;
-import com.example.library.dto.auth.LoginResponse;
+
+import com.example.library.dto.auth.RefreshTokenRequest;
+import com.example.library.dto.auth.TokenPairResponse;
 import com.example.library.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,8 +22,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest request){
+    public TokenPairResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/refresh")
+    public TokenPairResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return authService.refresh(request);
     }
 
 }
