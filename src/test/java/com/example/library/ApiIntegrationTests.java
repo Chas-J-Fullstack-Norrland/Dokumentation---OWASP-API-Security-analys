@@ -128,6 +128,43 @@ class ApiIntegrationTests {
     }
 
     @Test
+    void getAllBooks_withPagination_returnsLimitedResult() {
+        Author author = saveAuthor("Astrid Lindgren");
+        saveBook(author, "Mio min Mio", "9780000000101", 1954);
+        saveBook(author, "Bröderna Lejonhjärta", "9780000000103", 1973);
+
+        ResponseEntity<List<BookDtoV1>> response = restTemplate.exchange(
+                "/api/v1/books?page=0&size=1",
+                HttpMethod.GET,
+                authEntity(),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(1);
+    }
+
+    @Test
+    void getBooksByAuthorId_withPagination_returnsLimitedResult() {
+        Author author = saveAuthor("Selma Lagerlöf");
+        saveBook(author, "Gösta Berlings saga", "9780000000001", 1891);
+        saveBook(author, "Jerusalem", "9780000000102", 1901);
+
+        ResponseEntity<List<BookDtoV1>> response = restTemplate.exchange(
+                "/api/v1/authors/{id}/books?page=0&size=1",
+                HttpMethod.GET,
+                authEntity(),
+                new ParameterizedTypeReference<>() {},
+                author.getId()
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(1);
+    }
+
+    @Test
     void postLoans_returns201AndCreatedLoan() {
         LocalDate today = LocalDate.now();
 
@@ -174,6 +211,28 @@ class ApiIntegrationTests {
         assertThat(loan.bookTitle()).isEqualTo("Eragon");
         assertThat(loan.loanDate()).isEqualTo(today);
         assertThat(loan.returnDate()).isNull();
+    }
+
+    @Test
+    void getLoans_withPagination_returnsLimitedResult() {
+        LocalDate today = LocalDate.now();
+
+        Author author = saveAuthor("Christopher Paolini");
+        Book firstBook = saveBook(author, "Eragon", "9780000000003", 2005);
+        Book secondBook = saveBook(author, "Eldest", "9780000000004", 2006);
+        saveLoan(firstBook, today);
+        saveLoan(secondBook, today);
+
+        ResponseEntity<List<LoanDtoV1>> response = restTemplate.exchange(
+                "/api/v1/loans?page=0&size=1",
+                HttpMethod.GET,
+                authEntity(),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(1);
     }
 
     @Test
@@ -254,6 +313,63 @@ class ApiIntegrationTests {
         assertThat(response.getBody().error()).isEqualTo("Bad Request");
         assertThat(response.getBody().message()).isEqualTo("name: Author name is required");
         assertThat(response.getBody().path()).isEqualTo("/api/v1/authors");
+    }
+
+    @Test
+    void postBooks_whenAuthorIdIsZero_returns400() {
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
+                "/api/v1/books",
+                HttpMethod.POST,
+                authJsonEntity(new CreateBookRequestV1("Test Book", 0L, "9780000000999", 2000)),
+                ApiErrorResponse.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
+    }
+
+    @Test
+    void postLoans_whenBookIdIsZero_returns400() {
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
+                "/api/v1/loans",
+                HttpMethod.POST,
+                authJsonEntity(new CreateLoanRequestV1(0L)),
+                ApiErrorResponse.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
+    }
+
+    @Test
+    void getBookById_whenIdIsZero_returns400() {
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
+                "/api/v1/books/{id}",
+                HttpMethod.GET,
+                authEntity(),
+                ApiErrorResponse.class,
+                0L
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
+    }
+
+    @Test
+    void getAllBooks_whenSizeIsZero_returns400() {
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
+                "/api/v1/books?page=0&size=0",
+                HttpMethod.GET,
+                authEntity(),
+                ApiErrorResponse.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
     }
 
     @Test
@@ -386,9 +502,14 @@ class ApiIntegrationTests {
     }
 
     private String loginAndGetAccessToken() {
-        ResponseEntity<TokenPairResponse> response = restTemplate.postForEntity(
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Forwarded-For", "test-client-" + System.nanoTime());
+
+        ResponseEntity<TokenPairResponse> response = restTemplate.exchange(
                 "/api/auth/login",
-                jsonEntity(new LoginRequest("libraryuser", "librarypass")),
+                HttpMethod.POST,
+                new HttpEntity<>(new LoginRequest("libraryuser", "librarypass"), headers),
                 TokenPairResponse.class
         );
 
