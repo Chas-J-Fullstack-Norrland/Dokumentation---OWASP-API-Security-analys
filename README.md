@@ -90,6 +90,11 @@ Start the API:
 .\mvnw.cmd test
 ```
 
+## Cache results before and after 
+-- in .Benchmark-results.json file 
+
+
+
 ## Troubleshooting Vault
 - `No value found at secret/data/library`: re-run `vault kv put secret/library app.jwt.secret="<BASE64_SECRET>"`.
 - `Illegal base64 character`: `app.jwt.secret` is not valid Base64; generate and store a valid Base64 secret.
