@@ -18,7 +18,7 @@ param(
     [string]$Username = "libraryuser",
     [string]$Password = "librarypass",
 
-    [string]$BaselineFile = ".benchmark-baseline.json",
+    [string]$BaselineFile = ".benchmark-results.json",
 
     [switch]$AllowAnonymous,
     [switch]$InsecureSkipTls
