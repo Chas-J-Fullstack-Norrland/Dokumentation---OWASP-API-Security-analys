@@ -1,0 +1,63 @@
+﻿{
+    "baseline":  {
+                     "phase":  "baseline",
+                     "target":  "http://localhost:8080/api/v1/books/1",
+                     "requests":  1000,
+                     "warmup":  50,
+                     "avgMs":  17.74,
+                     "p95Ms":  18.89,
+                     "minMs":  15.99,
+                     "maxMs":  34.44,
+                     "timestamp":  "2026-05-10T18:12:47"
+                 },
+    "after":  {
+                  "measurement":  {
+                                      "phase":  "after",
+                                      "target":  "http://localhost:8080/api/v1/books/1",
+                                      "requests":  1000,
+                                      "warmup":  50,
+                                      "avgMs":  17.45,
+                                      "p95Ms":  18.35,
+                                      "minMs":  15.8,
+                                      "maxMs":  25.36,
+                                      "timestamp":  "2026-05-10T18:16:03"
+                                  },
+                  "avgImprovementPercent":  1.63,
+                  "p95ImprovementPercent":  2.86
+              },
+    "history":  [
+                    {
+                        "phase":  "baseline",
+                        "result":  {
+                                       "phase":  "baseline",
+                                       "target":  "http://localhost:8080/api/v1/books/1",
+                                       "requests":  1000,
+                                       "warmup":  50,
+                                       "avgMs":  17.74,
+                                       "p95Ms":  18.89,
+                                       "minMs":  15.99,
+                                       "maxMs":  34.44,
+                                       "timestamp":  "2026-05-10T18:12:47"
+                                   }
+                    },
+                    {
+                        "phase":  "after",
+                        "result":  {
+                                       "measurement":  {
+                                                           "phase":  "after",
+                                                           "target":  "http://localhost:8080/api/v1/books/1",
+                                                           "requests":  1000,
+                                                           "warmup":  50,
+                                                           "avgMs":  17.45,
+                                                           "p95Ms":  18.35,
+                                                           "minMs":  15.8,
+                                                           "maxMs":  25.36,
+                                                           "timestamp":  "2026-05-10T18:16:03"
+                                                       },
+                                       "avgImprovementPercent":  1.63,
+                                       "p95ImprovementPercent":  2.86
+                                   }
+                    }
+                ],
+    "lastUpdated":  "2026-05-10T18:16:03"
+}
