@@ -1,33 +1,83 @@
 # Library API
 
-A small Spring Boot project for managing **authors**, **books**, and **loans** in a library system.
+Spring Boot 4 REST API for managing authors, books, and loans.
 
 ## Tech stack
 - Java 21
-- Spring Boot 4
+- Spring Boot 4.0.3
 - Spring Web MVC
-- Spring Data JPA
-- H2 Database
-- Lombok
+- Spring Data JPA (H2)
+- Spring Security + JWT
 - Spring Validation
+- Spring Cache
+- Spring Cloud Vault (`spring-cloud-starter-vault-config`)
+- Bucket4j (rate limiting)
 - SpringDoc OpenAPI / Swagger UI
 - Maven
 
-## Features
-- CRUD-style API structure for authors, books, and loans
-- Versioned REST API with **v1** and **v2** endpoints
-- JPA relations between `Author`, `Book`, and `Loan`
-- Validation and centralized error handling
-- Simple caching for book-related reads
-- Concurrency handling for loan creation
+## Main features
+- Versioned API (`/api/v1/...` and `/api/v2/...`)
+- Validation + centralized error responses
+- JWT auth endpoints (`/api/auth/login`, `/api/auth/refresh`)
+- Loan concurrency protection in service/repository layer
+- Caching for book endpoints
+- Per-IP rate limiting
+- Secrets loaded from Vault (JWT signing secret)
 
-## API versions
-- `api/v1/...` = original version
-- `api/v2/...` = newer version with extended book support such as `genre`
+## Vault integration (new)
 
-## Run the project
+`app.jwt.secret` is no longer expected in `application.properties`.
+It is read from Vault using these config entries:
+
+- `spring.config.import=vault://`
+- `spring.cloud.vault.uri=http://127.0.0.1:8200`
+- `spring.cloud.vault.token=root`
+- `spring.cloud.vault.kv.backend=secret`
+- `spring.cloud.vault.kv.default-context=library`
+
+Expected secret path and key:
+
+- Path: `secret/library`
+- Key: `app.jwt.secret`
+
+The secret value must be a valid Base64 string (32-byte key encoded to Base64 is recommended).
+
+## Quick start (Windows PowerShell)
+
+### Option A: One-command dev bootstrap (recommended)
+
+This script starts Vault dev server if needed, ensures `app.jwt.secret` exists, and starts Spring Boot:
+
 ```powershell
-./mvnw.cmd spring-boot:run
+.\start-dev.ps1
+```
+
+Rotate JWT secret and restart:
+
+```powershell
+.\start-dev.ps1 -RotateSecret
+```
+
+### Option B: Manual Vault + app startup
+
+Start Vault dev server:
+
+```powershell
+vault server -dev -dev-root-token-id="root"
+```
+
+In another terminal, set Vault env vars and write the secret:
+
+```powershell
+$env:VAULT_ADDR = "http://127.0.0.1:8200"
+$env:VAULT_TOKEN = "root"
+vault kv put secret/library app.jwt.secret="<BASE64_SECRET>"
+```
+
+Start the API:
+
+```powershell
+.\mvnw.cmd spring-boot:run
 ```
 
 ## Useful URLs
@@ -37,14 +87,11 @@ A small Spring Boot project for managing **authors**, **books**, and **loans** i
 
 ## Run tests
 ```powershell
-./mvnw.cmd test
+.\mvnw.cmd test
 ```
 
-## Project purpose
-This project appears to be built as a backend learning project for practicing:
-- REST API design
-- JPA entity relationships
-- validation and exception handling
-- API versioning
-- concurrency and scalability concepts
+## Troubleshooting Vault
+- `No value found at secret/data/library`: re-run `vault kv put secret/library app.jwt.secret="<BASE64_SECRET>"`.
+- `Illegal base64 character`: `app.jwt.secret` is not valid Base64; generate and store a valid Base64 secret.
+- App fails on Vault connection: verify Vault is running at `http://127.0.0.1:8200` and token is `root` for dev mode.
 
