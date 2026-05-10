@@ -1,6 +1,7 @@
 package com.example.library.dto.v1;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 // Minimal request body for borrowing a book through the v1 API.
@@ -15,6 +16,7 @@ public record CreateLoanRequestV1(
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
         @NotNull(message = "Book id is required")
+        @Min(value = 1, message = "Book id must be >= 1")
         Long bookId
 ) {
 }

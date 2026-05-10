@@ -14,6 +14,7 @@ public record CreateBookRequestV1(
 
         @Schema(description = "Id of the author", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull(message = "Author id is required")
+        @Min(value = 1, message = "Author id must be >= 1")
         Long authorId,
 
         @Schema(description = "ISBN number", example = "9780000000003", requiredMode = Schema.RequiredMode.REQUIRED)

@@ -10,6 +10,7 @@ public record PatchBookRequestV2(
         String title,
 
         @Schema(description = "Updated author id", example = "1", nullable = true)
+        @Min(value = 1, message = "Author id must be >= 1")
         Long authorId,
 
         @Schema(description = "Updated book genre", example = "Fantasy", nullable = true)

@@ -14,9 +14,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import com.example.library.exception.ApiErrorResponse;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +28,7 @@ import java.util.List;
 @RequestMapping("/api/v2/books")
 // v2 keeps its own endpoint namespace so the API can evolve without breaking v1 clients.
 @Tag(name = "Books V2", description = "Endpoints for managing books in API version 2")
+@Validated
 public class BookControllerV2 {
 
     private final BookService bookService;
@@ -44,7 +48,11 @@ public class BookControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public BookResponseV2 getAllBooks(Pageable pageable) {
+    public BookResponseV2 getAllBooks(
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "page must be >= 0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "size must be >= 1") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
         // The v2 list response wraps the books together with explicit version metadata.
         List<BookDtoV2> books = bookService.getAllBooks(pageable)
                 .map(this::toBookDto)
@@ -68,7 +76,7 @@ public class BookControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public BookDtoV2 getBookById(@PathVariable Long id) {
+    public BookDtoV2 getBookById(@PathVariable @Min(value = 1, message = "id must be >= 1") Long id) {
         return toBookDto(bookService.getBookById(id));
     }
 
@@ -126,7 +134,7 @@ public class BookControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public BookDtoV2 patchBook(@PathVariable Long id,
+    public BookDtoV2 patchBook(@PathVariable @Min(value = 1, message = "id must be >= 1") Long id,
                                @Valid @RequestBody PatchBookRequestV2 request) {
         // PATCH lets v2 enrich existing books, for example by adding genre to older records already stored in the database.
         Book updatedBook = bookService.patchBook(

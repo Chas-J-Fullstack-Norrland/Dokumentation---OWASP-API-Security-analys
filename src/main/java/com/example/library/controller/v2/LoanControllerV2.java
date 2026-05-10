@@ -11,9 +11,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import com.example.library.exception.ApiErrorResponse;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +25,7 @@ import java.util.List;
 @RequestMapping("/api/v2/loans")
 // v2 keeps its own loan endpoint namespace even though the current payload matches v1 closely.
 @Tag(name = "Loans V2", description = "Endpoints for managing active book loans in API version 2")
+@Validated
 public class LoanControllerV2 {
 
     private final LoanService loanService;
@@ -68,7 +72,11 @@ public class LoanControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public List <LoanDtoV2> getActiveLoans(Pageable pageable){
+    public List <LoanDtoV2> getActiveLoans(
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "page must be >= 0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "size must be >= 1") int size
+    ){
+        Pageable pageable = PageRequest.of(page, size);
         // Keeping a dedicated v2 endpoint now makes later response changes easier without touching v1.
         return loanService.getActiveLoans(pageable)
                 .map(this::toDto)

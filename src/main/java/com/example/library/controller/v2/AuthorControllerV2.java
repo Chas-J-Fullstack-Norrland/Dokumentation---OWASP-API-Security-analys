@@ -18,8 +18,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +31,7 @@ import java.util.List;
 @RequestMapping("/api/v2/authors")
 // v2 keeps a separate author namespace so the response shape can evolve independently of v1.
 @Tag(name = "Authors V2", description = "Endpoints for managing authors in API version 2")
+@Validated
 public class AuthorControllerV2 {
 
 
@@ -77,7 +81,7 @@ public class AuthorControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public AuthorDtoV2 getAuthorById(@PathVariable Long id) {
+    public AuthorDtoV2 getAuthorById(@PathVariable @Min(value = 1, message = "id must be >= 1") Long id) {
         Author author = authorService.getAuthorById(id);
         return toAuthorDto(author);
     }
@@ -97,7 +101,12 @@ public class AuthorControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public List<BookDtoV2> getBooksByAuthorId(@PathVariable Long id, Pageable pageable) {
+    public List<BookDtoV2> getBooksByAuthorId(
+            @PathVariable @Min(value = 1, message = "id must be >= 1") Long id,
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "page must be >= 0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "size must be >= 1") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
         // v2 reuses the same author-book relation but returns the richer book DTO with genre and availability.
         return authorService.getBooksByAuthorId(id, pageable)
                 .map(this::toBookDto)

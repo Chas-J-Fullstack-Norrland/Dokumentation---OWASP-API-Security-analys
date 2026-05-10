@@ -12,8 +12,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/books")
 @Tag(name = "Books V1", description = "Endpoints for managing books in API version 1")
+@Validated
 // v1 exposes the original book representation without the later genre and availability additions.
 public class BookControllerV1 {
 
@@ -38,7 +42,11 @@ public class BookControllerV1 {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "All books returned")
     })
-    public List<BookDtoV1> getAllBooks(Pageable pageable) {
+    public List<BookDtoV1> getAllBooks(
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "page must be >= 0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "size must be >= 1") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
         return bookService.getAllBooks(pageable)
                 .map(this::toBookDto)
                 .getContent();
@@ -57,7 +65,7 @@ public class BookControllerV1 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public BookDtoV1 getBookById(@PathVariable Long id) {
+    public BookDtoV1 getBookById(@PathVariable @Min(value = 1, message = "id must be >= 1") Long id) {
         return toBookDto(bookService.getBookById(id));
     }
 

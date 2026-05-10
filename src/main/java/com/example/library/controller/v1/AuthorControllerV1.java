@@ -15,8 +15,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/authors")
 @Tag(name = "Authors V1", description = "Endpoints for managing authors in API v1" )
+@Validated
 // v1 keeps the original author contract so future versions can evolve independently.
 public class AuthorControllerV1 {
 
@@ -69,7 +73,7 @@ public class AuthorControllerV1 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public AuthorDtoV1 getAuthorById(@PathVariable Long id) {
+    public AuthorDtoV1 getAuthorById(@PathVariable @Min(value = 1, message = "id must be >= 1") Long id) {
         Author author = authorService.getAuthorById(id);
         return toAuthorDto(author);
     }
@@ -87,7 +91,12 @@ public class AuthorControllerV1 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public List<BookDtoV1> getBooksByAuthorId(@PathVariable Long id, Pageable pageable) {
+    public List<BookDtoV1> getBooksByAuthorId(
+            @PathVariable @Min(value = 1, message = "id must be >= 1") Long id,
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "page must be >= 0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "size must be >= 1") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
         // v1 book DTOs intentionally omit genre so the older contract stays stable.
         return authorService.getBooksByAuthorId(id, pageable)
                 .map(this::toBookDto)
