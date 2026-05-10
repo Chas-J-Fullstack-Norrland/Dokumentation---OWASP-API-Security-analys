@@ -7,10 +7,13 @@ import com.example.library.exception.AuthorNotFoundException;
 import com.example.library.repository.AuthorRepository;
 import com.example.library.repository.BookRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
+@Slf4j
 @Service
 @Transactional
 // Centralizes author-related business rules so controllers stay focused on HTTP concerns.
@@ -37,8 +40,18 @@ public class AuthorService {
     }
 
     // The author lookup fails fast before querying books so `/authors/{id}/books` returns 404 for unknown authors.
-    public List<Book> getBooksByAuthorId(Long authorId){
-        getAuthorById(authorId);
-        return bookRepository.findAllByAuthorId(authorId);
+
+    public Page<Book> getBooksByAuthorId(Long authorId, Pageable pageable) {
+        if (!authorRepository.existsById(authorId)) {
+            throw new AuthorNotFoundException(authorId);
+        }
+
+        log.info("Fetching books page for author {}: page={}, size={}, sort={}",
+                authorId,
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort());
+
+        return bookRepository.findAllByAuthorId(authorId, pageable);
     }
 }

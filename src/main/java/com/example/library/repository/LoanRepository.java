@@ -18,4 +18,6 @@ public interface LoanRepository extends JpaRepository <Loan, Long> {
 
     Page<Loan> findByReturnDateIsNull(Pageable pageable);
 
+
+
 }

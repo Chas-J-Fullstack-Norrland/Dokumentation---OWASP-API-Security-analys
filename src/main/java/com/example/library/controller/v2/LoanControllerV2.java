@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import com.example.library.exception.ApiErrorResponse;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -67,12 +68,11 @@ public class LoanControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public List <LoanDtoV2> getActiveLoans(){
+    public List <LoanDtoV2> getActiveLoans(Pageable pageable){
         // Keeping a dedicated v2 endpoint now makes later response changes easier without touching v1.
-        return loanService.getActiveLoans()
-                .stream()
+        return loanService.getActiveLoans(pageable)
                 .map(this::toDto)
-                .toList();
+                .getContent();
     }
 
     private LoanDtoV2 toDto(Loan loan){

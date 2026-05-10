@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -86,12 +87,11 @@ public class AuthorControllerV1 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public List<BookDtoV1> getBooksByAuthorId(@PathVariable Long id) {
+    public List<BookDtoV1> getBooksByAuthorId(@PathVariable Long id, Pageable pageable) {
         // v1 book DTOs intentionally omit genre so the older contract stays stable.
-        return authorService.getBooksByAuthorId(id)
-                .stream()
+        return authorService.getBooksByAuthorId(id, pageable)
                 .map(this::toBookDto)
-                .toList();
+                .getContent();
     }
 
 

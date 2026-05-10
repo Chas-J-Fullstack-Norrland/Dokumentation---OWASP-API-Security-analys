@@ -6,15 +6,15 @@ import com.example.library.entity.Book;
 import com.example.library.repository.BookRepository;
 import com.example.library.repository.LoanRepository;
 import jakarta.transaction.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
+@Slf4j
 @Service
 @Transactional
 // Handles book business rules, cache coordination, and version-specific create/update behavior.
@@ -24,7 +24,6 @@ public class BookService {
     private final BookRepository bookRepository;
     private final AuthorService authorService;
     private final LoanRepository loanRepository;
-    private static final Logger log = LoggerFactory.getLogger(BookService.class);
 
 
     public BookService(BookRepository bookRepository,
@@ -37,10 +36,25 @@ public class BookService {
     }
 
     @Cacheable("books")
-    public List<Book> getAllBooks() {
-        // Repeated reads can be served from cache until a create/update operation invalidates the list.
-        log.info("Fetching all books from database");
-        return bookRepository.findAll();
+    public Page<Book> getAllBooks(Pageable pageable) {
+        log.info("Fetching books page: page={}, size={}, sort={}",
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort());
+        return bookRepository.findAll(pageable);
+    }
+
+    public Page<Book> getBooksByAuthorId(Long authorId, Pageable pageable) {
+        // Reuse existing author existence rule so unknown author returns 404.
+        authorService.getAuthorById(authorId);
+
+        log.info("Fetching books page for author {}: page={}, size={}, sort={}",
+                authorId,
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort());
+
+        return bookRepository.findAllByAuthorId(authorId, pageable);
     }
 
     @Cacheable(value = "bookById", key = "#id")

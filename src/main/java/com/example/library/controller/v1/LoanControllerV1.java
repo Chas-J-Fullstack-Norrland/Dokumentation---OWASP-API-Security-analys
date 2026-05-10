@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -68,12 +69,11 @@ public class LoanControllerV1 {
             @ApiResponse(responseCode = "200", description = " All Active loans returned successfully")
     })
 
-    public List <LoanDtoV1> getActiveLoans(){
+    public List <LoanDtoV1> getActiveLoans(Pageable pageable){
         // Only active loans are returned because returned books are modeled by a non-null returnDate.
-        return loanService.getActiveLoans()
-                .stream()
+        return loanService.getActiveLoans(pageable)
                 .map(this::toDto)
-                .toList();
+                .getContent();
     }
 
     private LoanDtoV1 toDto(Loan loan){

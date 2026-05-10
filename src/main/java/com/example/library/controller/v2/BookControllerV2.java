@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import com.example.library.exception.ApiErrorResponse;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,12 +44,11 @@ public class BookControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public BookResponseV2 getAllBooks() {
+    public BookResponseV2 getAllBooks(Pageable pageable) {
         // The v2 list response wraps the books together with explicit version metadata.
-        List<BookDtoV2> books = bookService.getAllBooks()
-                .stream()
+        List<BookDtoV2> books = bookService.getAllBooks(pageable)
                 .map(this::toBookDto)
-                .toList();
+                .getContent();
 
         return new BookResponseV2(books, "v2");
     }

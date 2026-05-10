@@ -3,6 +3,7 @@ package com.example.library.controller.v1;
 import com.example.library.dto.v1.BookDtoV1;
 import com.example.library.dto.v1.CreateBookRequestV1;
 import com.example.library.entity.Book;
+import com.example.library.exception.ApiErrorResponse;
 import com.example.library.service.BookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,8 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import com.example.library.exception.ApiErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +26,6 @@ public class BookControllerV1 {
 
     private final BookService bookService;
 
-
     public BookControllerV1(BookService bookService) {
         this.bookService = bookService;
     }
@@ -35,15 +35,13 @@ public class BookControllerV1 {
             summary = "Get all books",
             description = "Returns all books in the v1 format"
     )
-
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "All books returned")
     })
-    public List<BookDtoV1> getAllBooks() {
-        return bookService.getAllBooks()
-                .stream()
+    public List<BookDtoV1> getAllBooks(Pageable pageable) {
+        return bookService.getAllBooks(pageable)
                 .map(this::toBookDto)
-                .toList();
+                .getContent();
     }
 
     @GetMapping("/{id}")
@@ -60,7 +58,6 @@ public class BookControllerV1 {
             )
     })
     public BookDtoV1 getBookById(@PathVariable Long id) {
-
         return toBookDto(bookService.getBookById(id));
     }
 
@@ -94,7 +91,6 @@ public class BookControllerV1 {
 
         return toBookDto(savedBook);
     }
-
 
     private BookDtoV1 toBookDto(Book book) {
         // The v1 DTO stays intentionally small to preserve the original API contract.

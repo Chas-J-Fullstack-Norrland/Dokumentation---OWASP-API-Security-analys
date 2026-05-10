@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import com.example.library.exception.ApiErrorResponse;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -97,12 +97,11 @@ public class AuthorControllerV2 {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    public List<BookDtoV2> getBooksByAuthorId(@PathVariable Long id) {
+    public List<BookDtoV2> getBooksByAuthorId(@PathVariable Long id, Pageable pageable) {
         // v2 reuses the same author-book relation but returns the richer book DTO with genre and availability.
-        return authorService.getBooksByAuthorId(id)
-                .stream()
+        return authorService.getBooksByAuthorId(id, pageable)
                 .map(this::toBookDto)
-                .toList();
+                .getContent();
     }
 
 

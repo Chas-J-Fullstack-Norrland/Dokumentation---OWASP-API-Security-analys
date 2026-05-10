@@ -7,6 +7,8 @@ import com.example.library.exception.BookAlreadyOnLoanException;
 import com.example.library.repository.LoanRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -48,6 +50,11 @@ public class LoanService {
     public List<Loan> getActiveLoans(){
         // The API only exposes active loans, which in this model means `returnDate is null`.
         return loanRepository.findByReturnDateIsNull();
+    }
+
+    public Page<Loan> getActiveLoans(Pageable pageable) {
+        // Pagination keeps list endpoints bounded for larger datasets.
+        return loanRepository.findByReturnDateIsNull(pageable);
     }
 
 }
