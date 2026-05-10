@@ -1,6 +1,8 @@
 package com.example.library;
 
 
+import com.example.library.dto.auth.LoginRequest;
+import com.example.library.dto.auth.TokenPairResponse;
 import com.example.library.dto.v1.CreateLoanRequestV1;
 import com.example.library.entity.Author;
 import com.example.library.entity.Book;
@@ -21,6 +23,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
@@ -56,12 +59,15 @@ class LoanConcurrencyTests {
     @Autowired
     private LoanRepository loanRepository;
 
+    private String accessToken;
+
     @BeforeEach
     void cleanDatabase() {
         // Delete in dependency order so each concurrency test starts from a clean schema state.
         loanRepository.deleteAll();
         bookRepository.deleteAll();
         authorRepository.deleteAll();
+        accessToken = loginAndGetAccessToken();
     }
 
     @Test
@@ -81,7 +87,7 @@ class LoanConcurrencyTests {
             return restTemplate.exchange(
                     loansUrl(),
                     HttpMethod.POST,
-                    jsonEntity(new CreateLoanRequestV1(book.getId())),
+                    authJsonEntity(new CreateLoanRequestV1(book.getId())),
                     String.class
             );
         };
@@ -131,7 +137,7 @@ class LoanConcurrencyTests {
             return restTemplate.exchange(
                     loansUrl(),
                     HttpMethod.POST,
-                    jsonEntity(new CreateLoanRequestV1(book.getId())),
+                    authJsonEntity(new CreateLoanRequestV1(book.getId())),
                     String.class
             );
         };
@@ -192,5 +198,25 @@ class LoanConcurrencyTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return new HttpEntity<>(body, headers);
+    }
+
+    private <T> HttpEntity<T> authJsonEntity(T body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(body, headers);
+    }
+
+    private String loginAndGetAccessToken() {
+        ResponseEntity<TokenPairResponse> response = restTemplate.postForEntity(
+                "/api/auth/login",
+                jsonEntity(new LoginRequest("libraryuser", "librarypass")),
+                TokenPairResponse.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isNotBlank();
+        return response.getBody().accessToken();
     }
 }

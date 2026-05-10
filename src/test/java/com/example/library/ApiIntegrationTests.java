@@ -1,5 +1,7 @@
 package com.example.library;
 
+import com.example.library.dto.auth.LoginRequest;
+import com.example.library.dto.auth.TokenPairResponse;
 import com.example.library.dto.v1.AuthorDtoV1;
 import com.example.library.dto.v1.BookDtoV1;
 import com.example.library.dto.v1.CreateAuthorRequestV1;
@@ -51,20 +53,24 @@ class ApiIntegrationTests {
     @Autowired
     private LoanRepository loanRepository;
 
+    private String accessToken;
+
     @BeforeEach
     void cleanDatabase() {
         // Clear child tables first so foreign-key constraints do not fail between tests.
         loanRepository.deleteAll();
         bookRepository.deleteAll();
         authorRepository.deleteAll();
+        accessToken = loginAndGetAccessToken();
     }
 
 
     @Test
     void postAuthors_returns201AndCreatedAuthor() {
-        ResponseEntity<AuthorDtoV1> response = restTemplate.postForEntity(
+        ResponseEntity<AuthorDtoV1> response = restTemplate.exchange(
                 "/api/v1/authors",
-                jsonEntity(new CreateAuthorRequestV1("Astrid Lindgren")),
+                HttpMethod.POST,
+                authJsonEntity(new CreateAuthorRequestV1("Astrid Lindgren")),
                 AuthorDtoV1.class
         );
 
@@ -82,8 +88,10 @@ class ApiIntegrationTests {
     void getAuthorById_returns200AndAuthor() {
         Author author = saveAuthor("Tove Jansson");
 
-        ResponseEntity<AuthorDtoV1> response = restTemplate.getForEntity(
+        ResponseEntity<AuthorDtoV1> response = restTemplate.exchange(
                 "/api/v1/authors/{id}",
+                HttpMethod.GET,
+                authEntity(),
                 AuthorDtoV1.class,
                 author.getId()
         );
@@ -103,7 +111,7 @@ class ApiIntegrationTests {
         ResponseEntity<List<BookDtoV1>> response = restTemplate.exchange(
                 "/api/v1/authors/{id}/books",
                 HttpMethod.GET,
-                null,
+                authEntity(),
                 new ParameterizedTypeReference<>() {},
                 author.getId()
         );
@@ -126,9 +134,10 @@ class ApiIntegrationTests {
         Author author = saveAuthor("Vilhelm Moberg");
         Book book = saveBook(author, "Utvandrarna", "9780000000002", 1949);
 
-        ResponseEntity<LoanDtoV1> response = restTemplate.postForEntity(
+        ResponseEntity<LoanDtoV1> response = restTemplate.exchange(
                 "/api/v1/loans",
-                jsonEntity(new CreateLoanRequestV1(book.getId())),
+                HttpMethod.POST,
+                authJsonEntity(new CreateLoanRequestV1(book.getId())),
                 LoanDtoV1.class
         );
 
@@ -152,7 +161,7 @@ class ApiIntegrationTests {
         ResponseEntity<List<LoanDtoV1>> response = restTemplate.exchange(
                 "/api/v1/loans",
                 HttpMethod.GET,
-                null,
+                authEntity(),
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -169,8 +178,10 @@ class ApiIntegrationTests {
 
     @Test
     void getAuthorById_whenAuthorDoesNotExist_returns404() {
-        ResponseEntity<ApiErrorResponse> response = restTemplate.getForEntity(
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
                 "/api/v1/authors/{id}",
+                HttpMethod.GET,
+                authEntity(),
                 ApiErrorResponse.class,
                 999L
         );
@@ -185,9 +196,10 @@ class ApiIntegrationTests {
 
     @Test
     void postLoans_whenBookDoesNotExist_returns404() {
-        ResponseEntity<ApiErrorResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
                 "/api/v1/loans",
-                jsonEntity(new CreateLoanRequestV1(999L)),
+                HttpMethod.POST,
+                authJsonEntity(new CreateLoanRequestV1(999L)),
                 ApiErrorResponse.class
         );
 
@@ -202,15 +214,17 @@ class ApiIntegrationTests {
         Author author = saveAuthor("Vilhelm Moberg");
         Book book = saveBook(author, "Utvandrarna", "9780000000099", 1949);
 
-        ResponseEntity<LoanDtoV1> firstResponse = restTemplate.postForEntity(
+        ResponseEntity<LoanDtoV1> firstResponse = restTemplate.exchange(
                 "/api/v1/loans",
-                jsonEntity(new CreateLoanRequestV1(book.getId())),
+                HttpMethod.POST,
+                authJsonEntity(new CreateLoanRequestV1(book.getId())),
                 LoanDtoV1.class
         );
 
-        ResponseEntity<ApiErrorResponse> secondResponse = restTemplate.postForEntity(
+        ResponseEntity<ApiErrorResponse> secondResponse = restTemplate.exchange(
                 "/api/v1/loans",
-                jsonEntity(new CreateLoanRequestV1(book.getId())),
+                HttpMethod.POST,
+                authJsonEntity(new CreateLoanRequestV1(book.getId())),
                 ApiErrorResponse.class
         );
 
@@ -228,9 +242,10 @@ class ApiIntegrationTests {
 
     @Test
     void postAuthors_whenNameIsBlank_returns400AndValidationError() {
-        ResponseEntity<ApiErrorResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
                 "/api/v1/authors",
-                jsonEntity(new CreateAuthorRequestV1("")),
+                HttpMethod.POST,
+                authJsonEntity(new CreateAuthorRequestV1("")),
                 ApiErrorResponse.class
         );
 
@@ -249,7 +264,7 @@ class ApiIntegrationTests {
         ResponseEntity<List<BookDtoV1>> response = restTemplate.exchange(
                 "/api/v1/books",
                 HttpMethod.GET,
-                null,
+                authEntity(),
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -269,8 +284,10 @@ class ApiIntegrationTests {
         Author author = saveAuthor("Selma Lagerlöf");
         Book book = saveBook(author, "Jerusalem", "9780000000102", 1901);
 
-        ResponseEntity<BookDtoV1> response = restTemplate.getForEntity(
+        ResponseEntity<BookDtoV1> response = restTemplate.exchange(
                 "/api/v1/books/{id}",
+                HttpMethod.GET,
+                authEntity(),
                 BookDtoV1.class,
                 book.getId()
         );
@@ -288,9 +305,10 @@ class ApiIntegrationTests {
     void postBooks_returns201AndCreatedBook() {
         Author author = saveAuthor("Astrid Lindgren");
 
-        ResponseEntity<BookDtoV1> response = restTemplate.postForEntity(
+        ResponseEntity<BookDtoV1> response = restTemplate.exchange(
                 "/api/v1/books",
-                jsonEntity(new CreateBookRequestV1(
+                HttpMethod.POST,
+                authJsonEntity(new CreateBookRequestV1(
                         "Bröderna Lejonhjärta",
                         author.getId(),
                         "9780000000103",
@@ -310,8 +328,10 @@ class ApiIntegrationTests {
 
     @Test
     void getBookById_whenBookDoesNotExist_returns404() {
-        ResponseEntity<ApiErrorResponse> response = restTemplate.getForEntity(
+        ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
                 "/api/v1/books/{id}",
+                HttpMethod.GET,
+                authEntity(),
                 ApiErrorResponse.class,
                 999L
         );
@@ -350,6 +370,32 @@ class ApiIntegrationTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return new HttpEntity<>(body, headers);
+    }
+
+    private HttpEntity<Void> authEntity() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        return new HttpEntity<>(headers);
+    }
+
+    private <T> HttpEntity<T> authJsonEntity(T body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(body, headers);
+    }
+
+    private String loginAndGetAccessToken() {
+        ResponseEntity<TokenPairResponse> response = restTemplate.postForEntity(
+                "/api/auth/login",
+                jsonEntity(new LoginRequest("libraryuser", "librarypass")),
+                TokenPairResponse.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isNotBlank();
+        return response.getBody().accessToken();
     }
 
 
