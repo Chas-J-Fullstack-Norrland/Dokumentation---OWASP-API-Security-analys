@@ -97,6 +97,24 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(ExternalBookNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleExternalBookNotFound(
+            ExternalBookNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("External book not found: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ExternalServiceUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleExternalServiceUnavailable(
+            ExternalServiceUnavailableException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("External service unavailable: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(
             Exception ex,
@@ -109,6 +127,7 @@ public class GlobalExceptionHandler {
                 request
         );
     }
+
 
     private ResponseEntity<ApiErrorResponse> buildErrorResponse(
             HttpStatus status,
